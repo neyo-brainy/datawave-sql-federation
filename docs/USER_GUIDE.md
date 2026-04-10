@@ -279,7 +279,7 @@ This lets you browse MySQL and Hive tables in the visual query builder. For cust
 ### Writing Custom SQL in Metabase
 
 1. Click **New** → **SQL Query**.
-2. Select your Trino database connection from the dropdown (top-left).
+2. Select any one of your Trino database connections from the dropdown (top-left). The dropdown only allows selecting one connection at a time, but this does **not** limit which catalogs you can query — all connections point to the same Trino federation engine, so fully-qualified table names (e.g., `mysql.warehouse.customers`) work regardless of which connection you selected.
 3. Write any SQL query, including cross-source federated queries:
 
 ```sql
