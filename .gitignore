@@ -1,0 +1,24 @@
+# Dependencies
+.venv/
+__pycache__/
+*.pyc
+
+# Docker volumes
+postgres-data/
+mysql-data/
+minio-data/
+metastore-db-data/
+metabase-data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
