@@ -63,8 +63,8 @@ A local implementation of a SQL Federation Layer for DataWave Industries, unifyi
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd visa-assessment
+git clone https://github.com/adeniyiajobiewe/datawave-sql-federation.git
+cd datawave-sql-federation
 ```
 
 ### 2. Start All Services
