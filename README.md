@@ -128,6 +128,8 @@ If this returns rows, all three data sources are federated correctly.
 
 ## Usage Guide
 
+> **For a comprehensive guide** covering all Trino clients (CLI, Web UI, Metabase, REST API, JDBC, direct database access), complete data model reference, and query cookbook, see the full [User Guide](docs/USER_GUIDE.md).
+
 ### Accessing the Query Interfaces
 
 | Interface | URL | Credentials |
@@ -294,6 +296,8 @@ docker compose down -v
 .
 ├── docker-compose.yml              # Orchestrates all services
 ├── README.md                       # This file
+├── docs/
+│   └── USER_GUIDE.md              # Comprehensive user guide
 ├── trino/
 │   └── etc/
 │       ├── config.properties       # Trino coordinator config
