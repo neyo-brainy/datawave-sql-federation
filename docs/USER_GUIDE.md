@@ -234,12 +234,31 @@ On your first visit, Metabase will walk you through an initial setup wizard:
 For convenience when using the **visual query builder** (which only browses the default catalog's tables), you can add separate Metabase connections for each catalog:
 
 1. Go to **Admin** (gear icon, top-right) → **Databases** → **Add database**.
-2. Select **Starburst** and fill in the same details as above, but change:
+2. Select **Starburst** and configure each connection:
 
-| Connection | Catalog | Display Name |
-|------------|---------|--------------|
-| MySQL | `mysql` | `Trino — MySQL Warehouse` |
-| Hive/MinIO | `hive` | `Trino — Hive Data Lake` |
+**MySQL Warehouse connection:**
+
+| Field | Value |
+|-------|-------|
+| **Display name** | `Trino — MySQL Warehouse` |
+| **Host** | `trino` |
+| **Port** | `8080` |
+| **Catalog** | `mysql` |
+| **Schema (optional)** | `warehouse` |
+| **Username** | `trino` |
+| **Password** | *(leave empty)* |
+
+**Hive Data Lake connection:**
+
+| Field | Value |
+|-------|-------|
+| **Display name** | `Trino — Hive Data Lake` |
+| **Host** | `trino` |
+| **Port** | `8080` |
+| **Catalog** | `hive` |
+| **Schema (optional)** | `datalake` |
+| **Username** | `trino` |
+| **Password** | *(leave empty)* |
 
 3. Click **Save** for each.
 
