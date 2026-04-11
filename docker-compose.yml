@@ -247,6 +247,7 @@ services:
       OAUTH2_PROXY_EMAIL_DOMAINS: "*"
       OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
       OAUTH2_PROXY_SCOPE: openid profile email
+      OAUTH2_PROXY_OIDC_AUDIENCE_CLAIMS: aud,azp
     ports:
       - "4180:4180"
     networks:

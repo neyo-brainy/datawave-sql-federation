@@ -26,7 +26,21 @@
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "clientAuthenticatorType": "client-secret",
-      "fullScopeAllowed": true
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "trino-sso",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "aud"
+          }
+        }
+      ]
     }
   ],
   "users": [
