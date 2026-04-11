@@ -77,6 +77,8 @@ docker compose up -d
 
 This pulls all required images and starts the entire stack. First run may take a few minutes for image downloads.
 
+> **Note:** Services start in dependency order, but some (Hive Metastore, Trino, Keycloak) may take 30–60 seconds to fully initialize even after `docker compose ps` shows them as running. If queries or SSO fail immediately after startup, wait a moment and retry.
+
 ### 3. Verify All Services Are Running
 
 ```bash
@@ -330,6 +332,7 @@ docker compose down -v
 
 | Issue | Solution |
 |-------|----------|
+| Services not ready after `docker compose up -d` | Some services (Trino, Hive Metastore, Keycloak) need 30–60s to initialize. Run `docker compose ps` and wait until all healthchecks pass before running queries. |
 | Trino can't connect to PostgreSQL/MySQL | Ensure databases are healthy: `docker compose ps`. Wait for healthchecks to pass. |
 | Hive Metastore fails to start | Check metastore-db is healthy first. View logs: `docker logs datawave-hive-metastore` |
 | MinIO buckets not created | Run `docker compose up minio-init` to reinitialize buckets. |
