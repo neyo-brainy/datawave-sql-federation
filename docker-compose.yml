@@ -194,6 +194,64 @@ services:
     networks:
       - frontend
 
+  # =========================================
+  # Identity Provider: Keycloak (SSO)
+  # =========================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: datawave-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: "8180"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    command: start-dev --import-realm
+    volumes:
+      - ./keycloak/datawave-realm.json:/opt/keycloak/data/import/datawave-realm.json:ro
+    ports:
+      - "8180:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - frontend
+
+  # =========================================
+  # SSO Proxy: OAuth2 Proxy (protects Trino UI)
+  # =========================================
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: datawave-oauth2-proxy
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      trino:
+        condition: service_healthy
+    environment:
+      OAUTH2_PROXY_PROVIDER: keycloak-oidc
+      OAUTH2_PROXY_CLIENT_ID: trino-sso
+      OAUTH2_PROXY_CLIENT_SECRET: trino-sso-secret
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:4180/oauth2/callback
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://keycloak:8080/realms/datawave
+      OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION: "true"
+      OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+      OAUTH2_PROXY_UPSTREAMS: http://trino:8080
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_COOKIE_SECRET: ZGF0YXdhdmUtY29va2llLXNlY3JldC12YWx1ZS0zMiE=
+      OAUTH2_PROXY_COOKIE_SECURE: "false"
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
+      OAUTH2_PROXY_SCOPE: openid profile email
+    ports:
+      - "4180:4180"
+    networks:
+      - frontend
+
 volumes:
   postgres-data:
   mysql-data:

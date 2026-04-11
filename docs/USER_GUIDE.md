@@ -14,6 +14,7 @@ This guide covers every way to interact with the DataWave SQL Federation platfor
 - [5. JDBC Connections (Programmatic)](#5-jdbc-connections-programmatic)
 - [6. MinIO Console (Object Storage Browser)](#6-minio-console-object-storage-browser)
 - [7. Direct Database Clients](#7-direct-database-clients)
+- [8. SSO (Single Sign-On)](#8-sso-single-sign-on)
 - [Data Model Reference](#data-model-reference)
 - [Query Cookbook](#query-cookbook)
 - [Managing the Data Lake](#managing-the-data-lake)
@@ -657,6 +658,97 @@ SELECT count(*) FROM customers;
 - Verifying that seed data was loaded correctly.
 - Debugging issues where Trino returns unexpected results.
 - Performing database-specific operations (indexes, permissions, etc.) not available through Trino.
+
+---
+
+## 8. SSO (Single Sign-On)
+
+The environment includes an **OpenID Connect (OIDC)** SSO integration using **Keycloak** as the Identity Provider (IdP) and **OAuth2 Proxy** as the authentication gateway in front of the Trino Web UI.
+
+### Architecture
+
+```
+Browser → OAuth2 Proxy (:4180) → Keycloak (:8180) → user authenticates
+       → redirect back with auth code → OAuth2 Proxy exchanges code for token
+       → OAuth2 Proxy sets session cookie → proxies request to Trino UI (:8080)
+```
+
+| Component | Role | Port |
+|-----------|------|------|
+| **Keycloak** | OIDC Identity Provider — manages users, clients, and tokens | 8180 |
+| **OAuth2 Proxy** | Reverse proxy that enforces authentication before granting access to Trino UI | 4180 |
+| **Trino Web UI** | Upstream service protected by OAuth2 Proxy | 8080 (direct, unprotected) |
+
+### Configuration Details
+
+#### Keycloak
+
+- **Image:** `quay.io/keycloak/keycloak:24.0`
+- **Admin Console:** http://localhost:8180 (`admin` / `admin`)
+- **Realm:** `datawave` — auto-imported from `keycloak/datawave-realm.json`
+- **Client:** `trino-sso` (confidential, OIDC)
+  - Redirect URI: `http://localhost:4180/oauth2/callback`
+  - Grant type: Authorization Code with PKCE (S256)
+
+#### OAuth2 Proxy
+
+- **Image:** `quay.io/oauth2-proxy/oauth2-proxy:v7.6.0`
+- **Entry point:** http://localhost:4180
+- **Provider:** `keycloak-oidc`
+- **Upstream:** `http://trino:8080` (Docker-internal)
+- **OIDC Discovery:** `http://keycloak:8080/realms/datawave` (Docker-internal)
+- **Browser Login URL:** `http://localhost:8180/realms/datawave/...` (overridden for host access)
+- **PKCE:** Enabled (`code_challenge_method=S256`)
+
+> The split between Docker-internal URLs (for backend token exchange) and `localhost` URLs (for browser redirects) is handled by overriding the login URL and skipping strict issuer verification.
+
+### Test Users
+
+| Username | Password | Email | Role |
+|----------|----------|-------|------|
+| `datawave-admin` | `admin123` | admin@datawave.local | Administrator |
+| `datawave-analyst` | `analyst123` | analyst@datawave.local | Analyst |
+
+### Accessing the SSO-Protected Trino UI
+
+1. Open http://localhost:4180 in your browser.
+2. Click **Sign in with Keycloak OIDC**.
+3. Enter credentials (e.g., `datawave-admin` / `admin123`).
+4. After successful authentication, you are redirected to the Trino Web UI.
+5. A session cookie maintains your login state across page refreshes.
+
+### Authentication Flow (OIDC Authorization Code + PKCE)
+
+1. **Initiation** — User navigates to `http://localhost:4180`. OAuth2 Proxy detects no valid session.
+2. **Redirect to IdP** — OAuth2 Proxy redirects the browser to Keycloak's authorization endpoint with:
+   - `client_id=trino-sso`
+   - `response_type=code`
+   - `redirect_uri=http://localhost:4180/oauth2/callback`
+   - `scope=openid profile email`
+   - `code_challenge` (SHA-256 of a random verifier, per PKCE)
+3. **User Authentication** — Keycloak presents the login form. User enters credentials.
+4. **Authorization Code** — After successful login, Keycloak redirects to the callback URL with an authorization code.
+5. **Token Exchange** — OAuth2 Proxy sends the authorization code + `code_verifier` to Keycloak's token endpoint (Docker-internal `keycloak:8080`).
+6. **Token Validation** — Keycloak validates the code and PKCE verifier, returns an ID token + access token.
+7. **Session Creation** — OAuth2 Proxy validates the ID token, creates an encrypted session cookie, and proxies the original request to Trino.
+
+### Managing Users in Keycloak
+
+1. Open http://localhost:8180 and log in as `admin` / `admin`.
+2. Select the **datawave** realm from the dropdown.
+3. Navigate to **Users** in the left sidebar.
+4. Click **Add user** to create new users, or select an existing user to:
+   - Reset their password
+   - Assign realm or client roles
+   - View active sessions
+
+### Azure AD Integration (Production Path)
+
+For production deployment on Azure, Keycloak can be replaced with or federated to **Azure Active Directory (Entra ID)**:
+
+1. **Direct Azure AD** — Register an OAuth2 application in Azure AD, configure OAuth2 Proxy with `--provider=azure` and the Azure tenant/client IDs. No Keycloak needed.
+2. **Keycloak + Azure AD Federation** — Keep Keycloak as the IdP broker, add Azure AD as an Identity Provider in the Keycloak admin console under **Identity Providers → OpenID Connect v1.0**. Users authenticate via Azure AD while Keycloak manages roles and group mappings.
+3. **Azure Container Apps** — Deploy Keycloak on Azure Container Apps with Azure Database for PostgreSQL as the backing store, replacing the embedded H2 used locally.
 
 ---
 

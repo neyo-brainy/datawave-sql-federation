@@ -42,6 +42,8 @@ A local implementation of a SQL Federation Layer for DataWave Industries, unifyi
 | **Hive Metastore** | `bitsondatadev/hive-metastore` | 9083 | Metadata catalog for MinIO/S3 data |
 | **Metastore DB** | `mysql:8.0` | — | MySQL backend for Hive Metastore |
 | **Metabase** | `metabase/metabase` | 3000 | BI tool / query UI |
+| **Keycloak** | `keycloak/keycloak:24.0` | 8180 | Identity Provider (SSO via OpenID Connect) |
+| **OAuth2 Proxy** | `oauth2-proxy:v7.6.0` | 4180 | SSO-protected reverse proxy for Trino UI |
 | **Trino Init** | `trinodb/trino:440` | — | One-shot: seeds Hive/MinIO data lake on startup |
 
 ### How It Maps to the Challenge Diagram
@@ -135,8 +137,10 @@ If this returns rows, all three data sources are federated correctly.
 | Interface | URL | Credentials |
 |-----------|-----|-------------|
 | **Trino Web UI** | http://localhost:8080 | Any username (no password) |
+| **Trino Web UI (SSO)** | http://localhost:4180 | Keycloak login (see [SSO section](#sso-single-sign-on)) |
 | **Metabase** | http://localhost:3000 | Set up on first visit |
 | **MinIO Console** | http://localhost:9001 | `minioadmin` / `minioadmin` |
+| **Keycloak Admin** | http://localhost:8180 | `admin` / `admin` |
 
 ### Using Trino CLI
 
@@ -269,6 +273,48 @@ Trino writes Parquet files into MinIO automatically — you can browse them at h
 2. Add the corresponding service to `docker-compose.yml` if needed.
 3. Restart Trino: `docker compose restart trino`
 
+## SSO (Single Sign-On)
+
+This project includes an OpenID Connect (OIDC) SSO integration using **Keycloak** as the Identity Provider and **OAuth2 Proxy** as the authentication gateway.
+
+### How It Works
+
+1. User navigates to http://localhost:4180 (SSO-protected Trino UI).
+2. OAuth2 Proxy redirects to the Keycloak login page at http://localhost:8180.
+3. User authenticates with their Keycloak credentials.
+4. Keycloak issues an OIDC token and redirects back to OAuth2 Proxy.
+5. OAuth2 Proxy validates the token, creates a session cookie, and proxies the request to the Trino Web UI.
+
+```
+User → OAuth2 Proxy (:4180) → Keycloak (:8180) → authenticate
+     → redirect back → OAuth2 Proxy validates token → Trino UI (:8080)
+```
+
+### Test Users
+
+| Username | Password | Role |
+|----------|----------|------|
+| `datawave-admin` | `admin123` | Administrator |
+| `datawave-analyst` | `analyst123` | Analyst |
+
+### Accessing the SSO-Protected Trino UI
+
+1. Open http://localhost:4180 in your browser.
+2. Click **Sign in with Keycloak OIDC**.
+3. Enter credentials (e.g., `datawave-admin` / `admin123`).
+4. After successful login, you are proxied to the Trino Web UI.
+
+### Keycloak Admin Console
+
+Access the Keycloak admin console at http://localhost:8180 with `admin` / `admin` to manage:
+- Realms, clients, and identity providers
+- Users, roles, and groups
+- Authentication flows and session policies
+
+> **Note:** Direct access to the Trino UI at http://localhost:8080 remains available for CLI/API usage. The SSO-protected endpoint at `:4180` is recommended for browser-based access.
+
+For detailed SSO configuration, authentication flow diagrams, and Azure AD integration guidance, see the [User Guide — SSO Section](docs/USER_GUIDE.md#8-sso-single-sign-on).
+
 ## Stopping the Environment
 
 ```bash
@@ -298,6 +344,8 @@ docker compose down -v
 ├── README.md                       # This file
 ├── docs/
 │   └── USER_GUIDE.md              # Comprehensive user guide
+├── keycloak/
+│   └── datawave-realm.json         # Keycloak realm with SSO clients and users
 ├── trino/
 │   └── etc/
 │       ├── config.properties       # Trino coordinator config
