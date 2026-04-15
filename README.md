@@ -54,6 +54,17 @@ A local implementation of a SQL Federation Layer for DataWave Industries, unifyi
 - **Catalog/Metadata** → Hive Metastore (manages table metadata for S3 objects)
 - **Query UI** → Metabase (BI tool connected to Trino via JDBC)
 
+## Azure Production Architecture
+
+The full Azure production architecture proposal is in the [azure-architecture/](azure-architecture/README.md) folder. It covers:
+
+1. **Core Azure Services** — AKS, ADLS Gen2, Azure DB for PostgreSQL/MySQL, Application Gateway, Key Vault, Azure Monitor
+2. **Reliability** — Zone-redundant HA, auto-scaling, backup/recovery, disaster recovery runbook
+3. **Security** — Entra ID (SSO), Private Endpoints, network isolation, encryption, least-privilege
+4. **Data Platform** — Trino connector configuration for Azure PaaS, Hive Metastore migration, future extensibility
+5. **Deployment Model** — Terraform IaC, GitHub Actions CI/CD, dev/staging/prod environments
+6. **Architecture Diagrams** — Full Azure topology, network flow, local-to-Azure mapping table
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) (v20.10+)
@@ -346,6 +357,8 @@ docker compose down -v
 .
 ├── docker-compose.yml              # Orchestrates all services
 ├── README.md                       # This file
+├── azure-architecture/
+│   └── README.md                   # Azure production architecture proposal
 ├── docs/
 │   └── USER_GUIDE.md              # Comprehensive user guide
 ├── keycloak/
