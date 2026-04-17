@@ -4,32 +4,9 @@ A local implementation of a SQL Federation Layer for DataWave Industries, unifyi
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Metabase (BI UI)                      │
-│                    localhost:3000                        │
-└──────────────────────────┬──────────────────────────────┘
-                           │ JDBC
-┌──────────────────────────▼──────────────────────────────┐
-│                  Trino (Federation Engine)               │
-│                    localhost:8080                        │
-│          ┌───────────┼───────────┐                      │
-│      PostgreSQL    MySQL      Hive                      │
-│      Connector   Connector  Connector                   │
-└──────┬───────────┬───────────┬──────────────────────────┘
-       │           │           │
-┌──────▼───┐ ┌────▼─────┐ ┌──▼───────────────────┐
-│PostgreSQL│ │  MySQL   │ │  Hive Metastore      │
-│Logistics │ │Warehouse │ │  (Catalog for S3)    │
-│  :5432   │ │  :3306   │ │      :9083           │
-└──────────┘ └──────────┘ └──────────┬───────────┘
-                                     │
-                           ┌─────────▼──────────┐
-                           │   MinIO (S3)       │
-                           │  API: :9000        │
-                           │  Console: :9001    │
-                           └────────────────────┘
-```
+<img width="450" height="470" alt="image" src="https://github.com/user-attachments/assets/47cd9fb5-3b5f-4d31-849c-ceb25e7e3fb0" />
+
+
 
 ### Components
 
